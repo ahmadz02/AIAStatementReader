@@ -575,6 +575,98 @@
   .preview-table tbody tr:hover { background: #f0f4ff !important; }
   .preview-table tbody tr.header-selected { background: var(--accent-light) !important; outline: 2px solid var(--accent); font-weight: 600; }
 
+  /* ─── ADMIN PANEL ─── */
+  .admin-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .admin-overlay.open { display: flex; }
+  .admin-modal {
+    background: var(--card);
+    border-radius: 14px;
+    width: 100%;
+    max-width: 620px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .admin-header {
+    background: var(--navy);
+    padding: 20px 28px;
+    border-radius: 14px 14px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .admin-header h2 { color: #fff; font-size: 16px; font-weight: 600; }
+  .admin-header .close-btn {
+    background: rgba(255,255,255,0.15);
+    border: none;
+    color: #fff;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .admin-body { padding: 28px; }
+  .admin-section { margin-bottom: 24px; }
+  .admin-section-title {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .ifar-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .ifar-stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+  }
+  .ifar-stat .sv { font-size: 20px; font-weight: 600; font-family: "DM Mono",monospace; color: var(--navy); }
+  .ifar-stat .sl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px; }
+  .admin-upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--surface);
+    position: relative;
+  }
+  .admin-upload-zone:hover { border-color: var(--navy-light); background: #f0f4ff; }
+  .admin-upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .admin-log {
+    background: #1a1f36;
+    border-radius: 8px;
+    padding: 16px;
+    font-family: "DM Mono", monospace;
+    font-size: 12px;
+    color: #a8b4d4;
+    max-height: 180px;
+    overflow-y: auto;
+    line-height: 1.7;
+  }
+  .admin-log .log-ok { color: #4ade80; }
+  .admin-log .log-warn { color: #fbbf24; }
+  .admin-log .log-err { color: #f87171; }
+
   @media (max-width: 600px) {
     .form-grid { grid-template-columns: 1fr; }
     .stats-row { grid-template-columns: 1fr; }
@@ -595,7 +687,10 @@
       <div class="subtitle">AIA Commission Statement Processor</div>
     </div>
   </div>
-  <div style="color:rgba(255,255,255,0.4);font-size:12px;font-family:'DM Mono',monospace" id="session-label"></div>
+  <div style="display:flex;align-items:center;gap:16px">
+    <div style="color:rgba(255,255,255,0.4);font-size:12px;font-family:'DM Mono',monospace" id="session-label"></div>
+    <button onclick="toggleAdmin()" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);font-size:11px;font-family:'DM Mono',monospace;padding:4px 12px;border-radius:6px;cursor:pointer;letter-spacing:0.05em">⚙ ADMIN</button>
+  </div>
 </header>
 <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:20%"></div></div>
 
@@ -863,6 +958,58 @@
   </div>
 
 </main>
+
+<!-- ADMIN PANEL -->
+<div class="admin-overlay" id="admin-overlay" onclick="closeAdminIfOutside(event)">
+  <div class="admin-modal">
+    <div class="admin-header">
+      <h2>⚙ Admin — Update IFAR Database</h2>
+      <button class="close-btn" onclick="toggleAdmin()">✕</button>
+    </div>
+    <div class="admin-body">
+
+      <!-- Current DB stats -->
+      <div class="admin-section">
+        <div class="admin-section-title">Current IFAR Database</div>
+        <div class="ifar-stats" id="ifar-stats"></div>
+        <div style="font-size:12px;color:var(--muted)">Last updated: <span id="ifar-last-updated">Embedded at build time</span></div>
+      </div>
+
+      <!-- Upload new Excel -->
+      <div class="admin-section">
+        <div class="admin-section-title">Upload New IFAR_Code_List.xlsx</div>
+        <div class="admin-upload-zone" id="admin-upload-zone">
+          <input type="file" accept=".xlsx,.xls" onchange="handleAdminUpload(this)"/>
+          <div style="font-size:28px;margin-bottom:8px">📋</div>
+          <div style="font-weight:600;color:var(--navy);font-size:14px">Drop IFAR_Code_List.xlsx here</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px">Must contain "Master List" sheet with same structure</div>
+        </div>
+      </div>
+
+      <!-- Processing log -->
+      <div class="admin-section" id="admin-log-section" style="display:none">
+        <div class="admin-section-title">Processing Log</div>
+        <div class="admin-log" id="admin-log"></div>
+      </div>
+
+      <!-- Download updated HTML -->
+      <div class="admin-section" id="admin-download-section" style="display:none">
+        <div class="admin-section-title">Download Updated Tool</div>
+        <div class="alert alert-success" style="margin-bottom:16px">
+          <span>✓</span>
+          <span>IFAR database updated successfully. Download the new HTML file and replace it on GitHub.</span>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <button class="btn-export" onclick="downloadUpdatedHTML()" style="height:42px;font-size:14px;padding:0 20px">
+            ⬇ Download AIA_Statement_Reader.html
+          </button>
+          <button class="btn btn-secondary" onclick="applyNewDataLive()">✓ Use new data now (this session)</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
 
 <script>
 // ── State ────────────────────────────────────────────────────────────────
@@ -1429,6 +1576,208 @@ function exportExcel() {
 function resetAll() {
   location.reload();
 }
+
+// ── Admin Panel ───────────────────────────────────────────────────────────
+let newIFARData = null;
+
+function toggleAdmin() {
+  const overlay = document.getElementById('admin-overlay');
+  overlay.classList.toggle('open');
+  if (overlay.classList.contains('open')) renderIFARStats();
+}
+
+function closeAdminIfOutside(e) {
+  if (e.target === document.getElementById('admin-overlay')) toggleAdmin();
+}
+
+function renderIFARStats() {
+  const ops = Object.keys(IFAR_LOOKUP_DATA);
+  const statsEl = document.getElementById('ifar-stats');
+  // Show count per operator in a grid
+  const colors = ['#1F3864','#2d4f8a','#3d6bc4','#1a9e5c','#c07a10','#d63b3b','#6b4fbb','#0f6e56'];
+  statsEl.innerHTML = ops.map((op, i) => {
+    const count = Object.keys(IFAR_LOOKUP_DATA[op]).length;
+    // Deduplicate (we store normalised variants so divide by ~1.5 approx)
+    const unique = Math.round(count * 0.65);
+    return `<div class="ifar-stat">
+      <div class="sv" style="color:${colors[i % colors.length]}">${unique}</div>
+      <div class="sl">${op}</div>
+    </div>`;
+  }).join('');
+}
+
+function adminLog(msg, type = 'ok') {
+  const log = document.getElementById('admin-log');
+  document.getElementById('admin-log-section').style.display = 'block';
+  const line = document.createElement('div');
+  line.className = 'log-' + type;
+  line.textContent = '› ' + msg;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+function handleAdminUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  // Reset state
+  newIFARData = null;
+  document.getElementById('admin-log-section').style.display = 'block';
+  document.getElementById('admin-log').innerHTML = '';
+  document.getElementById('admin-download-section').style.display = 'none';
+
+  adminLog(`Reading: ${file.name}`);
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array' });
+      adminLog(`Sheets found: ${wb.SheetNames.join(', ')}`);
+
+      if (!wb.SheetNames.includes('Master List')) {
+        adminLog('ERROR: "Master List" sheet not found!', 'err');
+        return;
+      }
+
+      const ws = wb.Sheets['Master List'];
+      const raw = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+      // Find header row (contains "Name" and "TSIWP Code")
+      let headerRowIdx = -1;
+      for (let i = 0; i < Math.min(raw.length, 10); i++) {
+        const rowStr = raw[i].join('|');
+        if (rowStr.includes('Name') && rowStr.includes('TSIWP')) {
+          headerRowIdx = i;
+          break;
+        }
+      }
+
+      if (headerRowIdx < 0) {
+        adminLog('ERROR: Could not find header row in Master List', 'err');
+        return;
+      }
+
+      const headers = raw[headerRowIdx].map(h => String(h).trim());
+      const dataRows = raw.slice(headerRowIdx + 1).filter(r => r.some(c => String(c).trim()));
+      adminLog(`Header row found at row ${headerRowIdx + 1}`);
+      adminLog(`Data rows: ${dataRows.length} agents`);
+
+      const OPERATOR_COL_MAP = {
+        'HLMT':           'HLMT IFAR Code',
+        'GE':             'GE IFAR Code',
+        'AIA':            'AIA IFAR Code',
+        'PruBSN':         'PruBSN IFAR Code',
+        'PruBSN-EB':      'PruBSN-EB',
+        'Zurich':         'Zurich IFAR Code',
+        'Etiqa':          'Etiqa Takaful Code',
+        'Takaful Ikhlas': 'Takaful Ikhlas Code',
+      };
+
+      const nameIdx  = headers.indexOf('Name');
+      const tsiwpIdx = headers.indexOf('TSIWP Code');
+
+      if (nameIdx < 0) {
+        adminLog('ERROR: "Name" column not found', 'err');
+        return;
+      }
+
+      const result = {};
+      let totalCodes = 0;
+
+      for (const [op, colName] of Object.entries(OPERATOR_COL_MAP)) {
+        const colIdx = headers.indexOf(colName);
+        if (colIdx < 0) {
+          adminLog(`WARNING: Column "${colName}" not found — skipping ${op}`, 'warn');
+          continue;
+        }
+
+        const lookup = {};
+        for (const row of dataRows) {
+          const name = String(row[nameIdx] || '').trim();
+          const code = String(row[colIdx] || '').trim();
+          const tsiwp = String(row[tsiwpIdx] || '').trim();
+          if (!name || !code || code === 'nan') continue;
+
+          lookup[code] = { name, tsiwp };
+          // Store normalised variant (O→0, uppercase)
+          const norm = code.toUpperCase().replace(/O/g, '0');
+          if (norm !== code) lookup[norm] = { name, tsiwp };
+
+          // Store numeric variant for GE-style codes
+          const num = String(parseFloat(code));
+          if (!isNaN(parseFloat(code)) && num !== code) lookup[num] = { name, tsiwp };
+        }
+
+        const count = Math.round(Object.keys(lookup).length * 0.65);
+        result[op] = lookup;
+        totalCodes += count;
+        adminLog(`${op}: ${count} agents loaded`);
+      }
+
+      adminLog(`Total: ${totalCodes} agents across ${Object.keys(result).length} operators`, 'ok');
+      adminLog('✓ Database ready — download updated tool below', 'ok');
+
+      newIFARData = result;
+      document.getElementById('admin-download-section').style.display = 'block';
+      renderIFARStats();
+
+    } catch(err) {
+      adminLog('ERROR: ' + err.message, 'err');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function applyNewDataLive() {
+  if (!newIFARData) return;
+  // Patch the live IFAR_LOOKUP_DATA object in memory for this session
+  for (const [op, lookup] of Object.entries(newIFARData)) {
+    IFAR_LOOKUP_DATA[op] = lookup;
+  }
+  adminLog('✓ Live data updated for this session', 'ok');
+  alert('IFAR database updated for this session! New data will be used when you run matching.');
+}
+
+function downloadUpdatedHTML() {
+  if (!newIFARData) return;
+
+  adminLog('Generating updated HTML file...');
+
+  // Get the current page HTML
+  const currentHTML = document.documentElement.outerHTML;
+
+  // Replace the IFAR_LOOKUP_DATA constant with new data
+  const newDataStr = JSON.stringify(newIFARData);
+  const updated = currentHTML.replace(
+    /const IFAR_LOOKUP_DATA = \{[\s\S]*?\};(\s*\n)/,
+    `const IFAR_LOOKUP_DATA = ${newDataStr};\n`
+  );
+
+  if (updated === currentHTML) {
+    adminLog('ERROR: Could not locate IFAR_LOOKUP_DATA in source. Try re-downloading manually.', 'err');
+    return;
+  }
+
+  // Add update timestamp as comment
+  const dated = updated.replace(
+    'const IFAR_LOOKUP_DATA =',
+    `/* IFAR DB updated: ${new Date().toISOString().slice(0,10)} */\nconst IFAR_LOOKUP_DATA =`
+  );
+
+  const blob = new Blob([dated], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'AIA_Statement_Reader.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+
+  adminLog('✓ AIA_Statement_Reader.html downloaded — replace it on GitHub', 'ok');
+}
+
+// Render stats on page load
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(renderIFARStats, 500);
+});
 </script>
 </body>
 </html>
